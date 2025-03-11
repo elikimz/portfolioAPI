@@ -1,0 +1,38 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.env.*
+
+# Virtual environment
+.env/
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Alembic migrations (if you want to exclude them)
+alembic/versions/*.pyc
+
+# Database
+*.sqlite3
+*.db
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Node (if using React frontend)
+node_modules/
+
+# PyCharm or VSCode settings
+*.iml
+.idea/
+.vscode/
