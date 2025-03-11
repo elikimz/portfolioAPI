@@ -1,6 +1,17 @@
 from fastapi import FastAPI
-from app.routers import users,projects,contacts,skill,blogs
+from fastapi.middleware.cors import CORSMiddleware
+from app.routers import users, projects, contacts, skill, blogs
+
 app = FastAPI()
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace "*" with your frontend URL for better security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(projects.router, prefix="/projects", tags=["Projects"])
