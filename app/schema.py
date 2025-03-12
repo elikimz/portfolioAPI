@@ -115,7 +115,7 @@ class ContactMessageResponse(BaseModel):
     is_read: bool
     created_at: datetime
     is_deleted: bool
-    user_id: UUID
+   
 
     class Config:
         orm_mode = True

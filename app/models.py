@@ -63,7 +63,7 @@ class ContactMessage(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     is_deleted = Column(Boolean, default=False)
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     user = relationship("User", back_populates="contact_messages")
 
 class Skill(Base):
