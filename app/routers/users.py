@@ -135,7 +135,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
 
 # Get all users
-@router.get("/users")
+@router.get("")
 def get_all_users(db: Session = Depends(get_db), current_user: User = Depends(get_db)):
     users = db.query(User).filter(User.is_deleted == False).all()
     return users
