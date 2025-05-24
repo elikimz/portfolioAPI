@@ -78,13 +78,10 @@
 #     return {"message": "Project deleted successfully"}
 
 
-
-
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
-from fastapi_pagination import Page, paginate, add_pagination
 
 from app.database import get_db
 from app.models import Project, User
@@ -110,14 +107,15 @@ def create_project(
     return new_project
 
 # Get all projects with pagination
-@router.get("", response_model=Page[ProjectResponse])
+@router.get("", response_model=List[ProjectResponse])
 def get_projects(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100)
 ):
-    projects = db.query(Project).filter(Project.is_deleted == False).all()
-    return paginate(projects, page=page, size=size)
+    offset = (page - 1) * size
+    projects = db.query(Project).filter(Project.is_deleted == False).offset(offset).limit(size).all()
+    return projects
 
 # Get a single project
 @router.get("/{project_id}", response_model=ProjectResponse)
@@ -159,6 +157,3 @@ def delete_project(project_id: UUID, db: Session = Depends(get_db), current_user
     db.commit()
 
     return {"message": "Project deleted successfully"}
-
-# Add pagination support to the router
-add_pagination(router)
