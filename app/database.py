@@ -41,4 +41,4 @@ def get_db():
     finally:
         db.close()
 
-from app.models import User, Project, ContactMessage, Skill, BlogPost
+from app.models import User, Project, ContactMessage, Skill, BlogPost, Certificate
