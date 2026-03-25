@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from app.database import get_db
@@ -13,13 +13,23 @@ router = APIRouter()
 @router.get("/", response_model=List[CertificateResponse])
 def get_certificates(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: Optional[str] = None
 ):
-    """Get all certificates for the current user"""
-    return db.query(Certificate).filter(
-        Certificate.user_id == current_user.id,
-        Certificate.is_deleted == False
-    ).all()
+    """
+    Get certificates. 
+    - If user_id is provided as a query parameter, return certificates for that user (public)
+    - Otherwise, return all non-deleted certificates (for portfolio display)
+    """
+    query = db.query(Certificate).filter(Certificate.is_deleted == False)
+    
+    if user_id:
+        try:
+            uid = UUID(user_id)
+            query = query.filter(Certificate.user_id == uid)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid user_id format")
+    
+    return query.all()
 
 @router.post("/", response_model=CertificateResponse)
 def create_certificate(
@@ -27,7 +37,7 @@ def create_certificate(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new certificate for the current user"""
+    """Create a new certificate for the current user (admin only)"""
     new_cert = Certificate(
         **payload.dict(),
         user_id=current_user.id
