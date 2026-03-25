@@ -1,9 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, List
 from enum import Enum
 from pydantic import HttpUrl
-
-
+from uuid import UUID
+from datetime import datetime
 
 class Token(BaseModel):
     access_token: str
@@ -29,14 +29,6 @@ class UserUpdate(BaseModel):
     bio: Optional[str] = Field(None, max_length=500)
     profile_picture: Optional[str] = Field(None, max_length=255)
 
-
-
-from pydantic import BaseModel
-from typing import List, Optional
-from uuid import UUID
-from datetime import datetime
-
-
 class ProjectCreate(BaseModel):
     title: str
     description: str
@@ -50,7 +42,6 @@ class ProjectCreate(BaseModel):
     start_date: Optional[datetime]
     end_date: Optional[datetime]
 
-
 class ProjectUpdate(BaseModel):
     title: Optional[str]
     description: Optional[str]
@@ -63,7 +54,6 @@ class ProjectUpdate(BaseModel):
     is_featured: Optional[bool]
     start_date: Optional[datetime]
     end_date: Optional[datetime]
-
 
 class ProjectResponse(BaseModel):
     id: UUID
@@ -85,7 +75,6 @@ class ProjectResponse(BaseModel):
     class Config:
         orm_mode = True
 
-
 class ContactMessageCreate(BaseModel):
     name: str
     email: EmailStr
@@ -93,8 +82,6 @@ class ContactMessageCreate(BaseModel):
     message: str
     response: Optional[str] = None
     is_read: Optional[bool] = False
-  
-
 
 class ContactMessageUpdate(BaseModel):
     name: Optional[str]
@@ -103,7 +90,6 @@ class ContactMessageUpdate(BaseModel):
     message: Optional[str]
     response: Optional[str]
     is_read: Optional[bool]
-
 
 class ContactMessageResponse(BaseModel):
     id: UUID
@@ -116,13 +102,8 @@ class ContactMessageResponse(BaseModel):
     created_at: datetime
     is_deleted: bool
    
-
     class Config:
         orm_mode = True
-
-
-
-
 
 class ProficiencyLevel(str, Enum):
     beginner = "Beginner"
@@ -130,20 +111,17 @@ class ProficiencyLevel(str, Enum):
     advanced = "Advanced"
     expert = "Expert"
 
-
 class SkillCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     proficiency_level: ProficiencyLevel
     category: Optional[str] = Field(None, max_length=100)
     icon_url: Optional[str]
 
-
 class SkillUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     proficiency_level: Optional[ProficiencyLevel]
     category: Optional[str] = Field(None, max_length=100)
     icon_url: Optional[str]
-
 
 class SkillResponse(BaseModel):
     id: UUID
@@ -158,8 +136,6 @@ class SkillResponse(BaseModel):
 
     class Config:
         orm_mode = True
-
-
 
 class BlogPostCreate(BaseModel):
     title: str
@@ -188,5 +164,36 @@ class BlogPostResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class CertificateCreate(BaseModel):
+    title: str
+    issuer: str
+    issue_date: Optional[datetime]
+    expiry_date: Optional[datetime]
+    credential_id: Optional[str]
+    credential_url: Optional[str]
+    image_url: Optional[str]
 
-# Let me know if you want me to tweak anything! 🚀
+class CertificateUpdate(BaseModel):
+    title: Optional[str]
+    issuer: Optional[str]
+    issue_date: Optional[datetime]
+    expiry_date: Optional[datetime]
+    credential_id: Optional[str]
+    credential_url: Optional[str]
+    image_url: Optional[str]
+
+class CertificateResponse(BaseModel):
+    id: UUID
+    title: str
+    issuer: str
+    issue_date: Optional[datetime]
+    expiry_date: Optional[datetime]
+    credential_id: Optional[str]
+    credential_url: Optional[str]
+    image_url: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    user_id: UUID
+
+    class Config:
+        orm_mode = True

@@ -25,7 +25,7 @@ class User(Base):
     skills = relationship("Skill", back_populates="user", cascade="all, delete-orphan")
     contact_messages = relationship("ContactMessage", back_populates="user", cascade="all, delete-orphan")
     blog_posts = relationship("BlogPost", back_populates="author", cascade="all, delete-orphan")
-
+    certificates = relationship("Certificate", back_populates="user", cascade="all, delete-orphan")
 
     
 class Project(Base):
@@ -96,3 +96,21 @@ class BlogPost(Base):
     is_deleted = Column(Boolean, default=False)
 
     author = relationship("User", back_populates="blog_posts")
+
+class Certificate(Base):
+    __tablename__ = "certificates"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String, nullable=False)
+    issuer = Column(String, nullable=False)
+    issue_date = Column(DateTime, nullable=True)
+    expiry_date = Column(DateTime, nullable=True)
+    credential_id = Column(String, nullable=True)
+    credential_url = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted = Column(Boolean, default=False)
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user = relationship("User", back_populates="certificates")
