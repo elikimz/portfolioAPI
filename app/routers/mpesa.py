@@ -10,12 +10,12 @@ router = APIRouter()
 # ─────────────────────────────────────────────────────────────────────────────
 # Environment toggle: set MPESA_ENV=production in Azure to switch to live mode
 # ─────────────────────────────────────────────────────────────────────────────
-MPESA_ENV = os.getenv("MPESA_ENV", "sandbox")  # "sandbox" | "production"
+MPESA_ENV = os.getenv("MPESA_ENV", "production")  # "sandbox" | "production"
 
 if MPESA_ENV == "production":
-    # Production credentials — read from Azure env vars
-    CONSUMER_KEY    = os.getenv("MPESA_CONSUMER_KEY",    "xSmPJZdqqFHe30Ku7pVCTdjyZfjOv40zUbnRnZA68VIkqgcV")
-    CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "25iI1idAzJ34Atqu4DhIBT5fazXmRG5GQnBz4YGV9MBwXYkwgqwetGHJefpqEln8")
+    # Production credentials — original approved app (Prod-elijah-kimani-wairimu-1758643362)
+    CONSUMER_KEY    = os.getenv("MPESA_CONSUMER_KEY",    "LM6MxKjJXDzqIxYK7ej1A6DWUd8sVJ6XYf22ByFh4R4rgykA")
+    CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "MAjliohCqtGGvshySY8RkHZSF88eemW1Wp77PjwxO3ci0m7242fdGGEXv2TQkljk")
     PASSKEY         = os.getenv("MPESA_PASSKEY",         "d4f1dd629fbd7638a5272362f3b42057bf5fed09bca901db242b0ac7e88ee993")
     SHORTCODE       = os.getenv("MPESA_SHORTCODE",       "3538431")
     DARAJA_BASE     = "https://api.safaricom.co.ke"
