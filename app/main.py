@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import users, projects, contacts, skill, blogs
+from app.routers import users, projects, contacts, skill, blogs, mpesa
 
 app = FastAPI()
 
@@ -18,6 +18,7 @@ app.include_router(projects.router, prefix="/projects", tags=["Projects"])
 app.include_router(contacts.router, prefix="/contacts", tags=["Contacts"])
 app.include_router(skill.router, prefix="/skill", tags=["Skill"])
 app.include_router(blogs.router, prefix="/blogs", tags=["Blogs"])
+app.include_router(mpesa.router, prefix="/mpesa", tags=["M-Pesa"])
 
 @app.get("/")
 def read_root():
