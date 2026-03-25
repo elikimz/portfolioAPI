@@ -7,32 +7,42 @@ from datetime import datetime
 
 router = APIRouter()
 
-# Daraja API credentials — read from env vars (fallback to hardcoded)
-CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY", "xSmPJZdqqFHe30Ku7pVCTdjyZfjOv40zUbnRnZA68VIkqgcV")
-CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "25iI1idAzJ34Atqu4DhIBT5fazXmRG5GQnBz4YGV9MBwXYkwgqwetGHJefpqEln8")
-PASSKEY = os.getenv("MPESA_PASSKEY", "d4f1dd629fbd7638a5272362f3b42057bf5fed09bca901db242b0ac7e88ee993")
-SHORTCODE = os.getenv("MPESA_SHORTCODE", "3538431")
-CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "https://portifolio.azurewebsites.net/mpesa/callback")
+# ─────────────────────────────────────────────────────────────────────────────
+# Environment toggle: set MPESA_ENV=production in Azure to switch to live mode
+# ─────────────────────────────────────────────────────────────────────────────
+MPESA_ENV = os.getenv("MPESA_ENV", "sandbox")  # "sandbox" | "production"
 
-DARAJA_BASE = "https://api.safaricom.co.ke"
+if MPESA_ENV == "production":
+    CONSUMER_KEY    = os.getenv("MPESA_CONSUMER_KEY",    "xSmPJZdqqFHe30Ku7pVCTdjyZfjOv40zUbnRnZA68VIkqgcV")
+    CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "25iI1idAzJ34Atqu4DhIBT5fazXmRG5GQnBz4YGV9MBwXYkwgqwetGHJefpqEln8")
+    PASSKEY         = os.getenv("MPESA_PASSKEY",         "d4f1dd629fbd7638a5272362f3b42057bf5fed09bca901db242b0ac7e88ee993")
+    SHORTCODE       = os.getenv("MPESA_SHORTCODE",       "3538431")
+    DARAJA_BASE     = "https://api.safaricom.co.ke"
+else:
+    # Safaricom official sandbox test credentials
+    CONSUMER_KEY    = os.getenv("MPESA_CONSUMER_KEY",    "9v38Dtu5u2BpsITPmLcXNWGMsjZRWSTG")
+    CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "bclwIPkcRqw61yUt")
+    PASSKEY         = os.getenv("MPESA_PASSKEY",         "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919")
+    SHORTCODE       = os.getenv("MPESA_SHORTCODE",       "174379")
+    DARAJA_BASE     = "https://sandbox.safaricom.co.ke"
+
+CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "https://portifolio.azurewebsites.net/mpesa/callback")
 
 
 def get_access_token() -> str:
     credentials = base64.b64encode(f"{CONSUMER_KEY}:{CONSUMER_SECRET}".encode()).decode()
-    headers = {"Authorization": f"Basic {credentials}"}
     url = f"{DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials"
 
-    # Try GET first (standard Daraja method)
-    response = requests.get(url, headers=headers, timeout=15)
+    response = requests.get(url, headers={"Authorization": f"Basic {credentials}"}, timeout=15)
 
-    # If GET returns empty body, try POST
-    if not response.text.strip():
-        response = requests.post(url, headers=headers, timeout=15)
+    if response.status_code != 200 or not response.text.strip():
+        # Fallback to POST
+        response = requests.post(url, headers={"Authorization": f"Basic {credentials}"}, timeout=15)
 
-    if response.status_code not in (200,):
+    if response.status_code != 200:
         raise HTTPException(
             status_code=502,
-            detail=f"Failed to get M-Pesa access token (HTTP {response.status_code}). Check your Daraja credentials."
+            detail=f"Failed to get M-Pesa access token (HTTP {response.status_code})."
         )
 
     body = response.text.strip()
@@ -41,7 +51,7 @@ def get_access_token() -> str:
             status_code=502,
             detail=(
                 "Daraja API returned an empty token response. "
-                "Your Azure App Service outbound IPs must be whitelisted on the Safaricom Daraja portal under your app settings."
+                "If using production mode, whitelist your server IPs on the Safaricom Daraja portal."
             )
         )
 
@@ -49,16 +59,10 @@ def get_access_token() -> str:
         data = response.json()
         token = data.get("access_token")
         if not token:
-            raise HTTPException(
-                status_code=502,
-                detail="Access token missing from Daraja response. Ensure your app is fully activated."
-            )
+            raise HTTPException(status_code=502, detail="Access token missing from Daraja response.")
         return token
     except Exception:
-        raise HTTPException(
-            status_code=502,
-            detail="Daraja API returned an unexpected response format."
-        )
+        raise HTTPException(status_code=502, detail="Daraja API returned an unexpected response format.")
 
 
 def generate_password() -> tuple[str, str]:
@@ -117,10 +121,7 @@ def stk_push(payload: STKPushRequest):
     response = requests.post(
         f"{DARAJA_BASE}/mpesa/stkpush/v1/processrequest",
         json=body,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         timeout=20
     )
 
@@ -143,6 +144,7 @@ def stk_push(payload: STKPushRequest):
         "message": "STK Push sent! Check your phone for the M-Pesa prompt.",
         "checkout_request_id": data.get("CheckoutRequestID"),
         "merchant_request_id": data.get("MerchantRequestID"),
+        "environment": MPESA_ENV,
     }
 
 
@@ -162,10 +164,7 @@ def generate_qr(payload: QRCodeRequest):
     response = requests.post(
         f"{DARAJA_BASE}/mpesa/qrcode/v1/generate",
         json=body,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         timeout=20
     )
 
