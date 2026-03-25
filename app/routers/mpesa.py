@@ -19,14 +19,22 @@ DARAJA_BASE = "https://api.safaricom.co.ke"
 
 def get_access_token() -> str:
     credentials = base64.b64encode(f"{CONSUMER_KEY}:{CONSUMER_SECRET}".encode()).decode()
-    response = requests.get(
+    # Safaricom Daraja API requires POST for token generation
+    response = requests.post(
         f"{DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials",
         headers={"Authorization": f"Basic {credentials}"},
         timeout=15
     )
     if response.status_code != 200:
-        raise HTTPException(status_code=502, detail="Failed to get M-Pesa access token")
-    return response.json()["access_token"]
+        raise HTTPException(status_code=502, detail=f"Failed to get M-Pesa access token (HTTP {response.status_code})")
+    try:
+        data = response.json()
+        token = data.get("access_token")
+        if not token:
+            raise HTTPException(status_code=502, detail="M-Pesa access token not returned. Ensure your Daraja app is fully activated on the Safaricom portal.")
+        return token
+    except Exception:
+        raise HTTPException(status_code=502, detail="M-Pesa API returned an unexpected response. Please check your Daraja app activation status.")
 
 
 def generate_password() -> tuple[str, str]:
