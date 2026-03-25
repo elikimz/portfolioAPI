@@ -11,8 +11,15 @@ from app.routers.users import get_current_user
 router = APIRouter()
 
 @router.get("/", response_model=List[CertificateResponse])
-def get_certificates(db: Session = Depends(get_db)):
-    return db.query(Certificate).filter(Certificate.is_deleted == False).all()
+def get_certificates(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all certificates for the current user"""
+    return db.query(Certificate).filter(
+        Certificate.user_id == current_user.id,
+        Certificate.is_deleted == False
+    ).all()
 
 @router.post("/", response_model=CertificateResponse)
 def create_certificate(
@@ -20,6 +27,7 @@ def create_certificate(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Create a new certificate for the current user"""
     new_cert = Certificate(
         **payload.dict(),
         user_id=current_user.id
@@ -36,7 +44,12 @@ def update_certificate(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    cert = db.query(Certificate).filter(Certificate.id == id, Certificate.is_deleted == False).first()
+    """Update a certificate (only the owner can update)"""
+    cert = db.query(Certificate).filter(
+        Certificate.id == id,
+        Certificate.user_id == current_user.id,
+        Certificate.is_deleted == False
+    ).first()
     if not cert:
         raise HTTPException(status_code=404, detail="Certificate not found")
     
@@ -54,7 +67,12 @@ def delete_certificate(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    cert = db.query(Certificate).filter(Certificate.id == id, Certificate.is_deleted == False).first()
+    """Delete a certificate (only the owner can delete)"""
+    cert = db.query(Certificate).filter(
+        Certificate.id == id,
+        Certificate.user_id == current_user.id,
+        Certificate.is_deleted == False
+    ).first()
     if not cert:
         raise HTTPException(status_code=404, detail="Certificate not found")
     
