@@ -13,17 +13,19 @@ router = APIRouter()
 MPESA_ENV = os.getenv("MPESA_ENV", "sandbox")  # "sandbox" | "production"
 
 if MPESA_ENV == "production":
+    # Production credentials — read from Azure env vars
     CONSUMER_KEY    = os.getenv("MPESA_CONSUMER_KEY",    "xSmPJZdqqFHe30Ku7pVCTdjyZfjOv40zUbnRnZA68VIkqgcV")
     CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "25iI1idAzJ34Atqu4DhIBT5fazXmRG5GQnBz4YGV9MBwXYkwgqwetGHJefpqEln8")
     PASSKEY         = os.getenv("MPESA_PASSKEY",         "d4f1dd629fbd7638a5272362f3b42057bf5fed09bca901db242b0ac7e88ee993")
     SHORTCODE       = os.getenv("MPESA_SHORTCODE",       "3538431")
     DARAJA_BASE     = "https://api.safaricom.co.ke"
 else:
-    # Safaricom official sandbox test credentials
-    CONSUMER_KEY    = os.getenv("MPESA_CONSUMER_KEY",    "9v38Dtu5u2BpsITPmLcXNWGMsjZRWSTG")
-    CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "bclwIPkcRqw61yUt")
-    PASSKEY         = os.getenv("MPESA_PASSKEY",         "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919")
-    SHORTCODE       = os.getenv("MPESA_SHORTCODE",       "174379")
+    # Sandbox mode — ALWAYS use official Safaricom sandbox test credentials
+    # These are hardcoded intentionally so Azure env vars don't override them
+    CONSUMER_KEY    = "9v38Dtu5u2BpsITPmLcXNWGMsjZRWSTG"
+    CONSUMER_SECRET = "bclwIPkcRqw61yUt"
+    PASSKEY         = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+    SHORTCODE       = "174379"
     DARAJA_BASE     = "https://sandbox.safaricom.co.ke"
 
 CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "https://portifolio.azurewebsites.net/mpesa/callback")
