@@ -6,7 +6,7 @@ from uuid import UUID
 from app.database import get_db
 from app.models import Certificate, User
 from app.schema import CertificateCreate, CertificateUpdate, CertificateResponse
-from app.auth import get_current_user
+from app.routers.users import get_current_user
 
 router = APIRouter()
 
