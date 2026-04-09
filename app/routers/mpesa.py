@@ -18,7 +18,8 @@ router = APIRouter()
 MPESA_ENV = os.getenv("MPESA_ENV", "production")  # "sandbox" | "production"
 
 if MPESA_ENV == "production":
-    # Production credentials
+    # Production credentials - CORRECTED from screenshot
+    # Note: The key in the screenshot has 'DzqlxYK' (lowercase L) instead of 'DzqIxYK' (uppercase I)
     CONSUMER_KEY    = os.getenv("MPESA_CONSUMER_KEY",    "LM6MxKjJXDzqIxYK7ej1A6DWUd8sVJ6XYf22ByFh4R4rgykA")
     CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "MAjliohCqtGGvshySY8RkHZSF88eemW1Wp77PjwxO3ci0m7242fdGGEXv2TQkljk")
     PASSKEY         = os.getenv("MPESA_PASSKEY",         "d4f1dd629fbd7638a5272362f3b42057bf5fed09bca901db242b0ac7e88ee993")
@@ -36,33 +37,45 @@ CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "https://portifolio-ebdeg3d3fug9b
 
 
 def get_access_token() -> str:
+    # Ensure we use the exact credentials
     credentials = base64.b64encode(f"{CONSUMER_KEY}:{CONSUMER_SECRET}".encode()).decode()
     url = f"{DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials"
     
-    # Safaricom Production often requires POST for token generation
+    headers = {
+        "Authorization": f"Basic {credentials}",
+        "Accept": "application/json"
+    }
+
+    # Safaricom Production is sensitive to method and headers
     try:
-        response = requests.post(url, headers={"Authorization": f"Basic {credentials}"}, timeout=30)
-        if response.status_code != 200:
-            # Fallback to GET if POST fails
-            response = requests.get(url, headers={"Authorization": f"Basic {credentials}"}, timeout=30)
+        # Try GET first as it is the standard for Daraja token generation
+        response = requests.get(url, headers=headers, timeout=30)
+        
+        # If GET fails or returns empty, try POST
+        if response.status_code != 200 or not response.text.strip():
+            logger.info(f"GET token failed (Status {response.status_code}), trying POST...")
+            response = requests.post(url, headers=headers, timeout=30)
+            
     except Exception as e:
-        logger.error(f"Token request failed: {str(e)}")
+        logger.error(f"Token request exception: {str(e)}")
         raise HTTPException(status_code=502, detail=f"M-Pesa connection error: {str(e)}")
 
     if response.status_code != 200:
         logger.error(f"Failed to get token. Status: {response.status_code}, Response: {response.text}")
         raise HTTPException(
             status_code=502,
-            detail=f"Failed to get M-Pesa access token (HTTP {response.status_code})."
+            detail=f"M-Pesa Auth Failed (HTTP {response.status_code}). Please check Consumer Key/Secret."
         )
 
     try:
         data = response.json()
         token = data.get("access_token")
         if not token:
+            logger.error(f"Token missing in JSON: {data}")
             raise HTTPException(status_code=502, detail="Access token missing from Daraja response.")
         return token
     except Exception:
+        logger.error(f"Invalid JSON response: {response.text}")
         raise HTTPException(status_code=502, detail="Daraja API returned an unexpected response format.")
 
 
@@ -74,7 +87,7 @@ def generate_password() -> tuple[str, str]:
 
 
 class STKPushRequest(BaseModel):
-    phone_number: str  # Fixed to match frontend payload
+    phone_number: str
     amount: int = 100
     description: str = "Buy Elijah a cup of tea"
 
@@ -126,7 +139,7 @@ def stk_push(payload: STKPushRequest):
     try:
         data = response.json()
     except Exception:
-        logger.error(f"Invalid JSON from M-Pesa: {response.text}")
+        logger.error(f"Invalid JSON from M-Pesa STK: {response.text}")
         raise HTTPException(status_code=502, detail="Invalid response from M-Pesa STK Push API")
 
     if response.status_code != 200 or data.get("ResponseCode") != "0":
@@ -154,7 +167,6 @@ async def mpesa_callback(request: Request):
         data = await request.json()
         logger.info(f"M-Pesa Callback received: {data}")
         
-        # Extract basic info for logging
         stk_callback = data.get("Body", {}).get("stkCallback", {})
         result_code = stk_callback.get("ResultCode")
         result_desc = stk_callback.get("ResultDesc")
