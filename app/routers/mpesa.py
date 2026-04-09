@@ -1,9 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 import requests
 import base64
 import os
+import logging
 from datetime import datetime
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -13,48 +18,42 @@ router = APIRouter()
 MPESA_ENV = os.getenv("MPESA_ENV", "production")  # "sandbox" | "production"
 
 if MPESA_ENV == "production":
-    # Production credentials — original approved app (Prod-elijah-kimani-wairimu-1758643362)
+    # Production credentials
     CONSUMER_KEY    = os.getenv("MPESA_CONSUMER_KEY",    "LM6MxKjJXDzqIxYK7ej1A6DWUd8sVJ6XYf22ByFh4R4rgykA")
     CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET", "MAjliohCqtGGvshySY8RkHZSF88eemW1Wp77PjwxO3ci0m7242fdGGEXv2TQkljk")
     PASSKEY         = os.getenv("MPESA_PASSKEY",         "d4f1dd629fbd7638a5272362f3b42057bf5fed09bca901db242b0ac7e88ee993")
     SHORTCODE       = os.getenv("MPESA_SHORTCODE",       "3538431")
     DARAJA_BASE     = "https://api.safaricom.co.ke"
 else:
-    # Sandbox mode — ALWAYS use official Safaricom sandbox test credentials
-    # These are hardcoded intentionally so Azure env vars don't override them
+    # Sandbox mode
     CONSUMER_KEY    = "9v38Dtu5u2BpsITPmLcXNWGMsjZRWSTG"
     CONSUMER_SECRET = "bclwIPkcRqw61yUt"
     PASSKEY         = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
     SHORTCODE       = "174379"
     DARAJA_BASE     = "https://sandbox.safaricom.co.ke"
 
-CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "https://portifolio.azurewebsites.net/mpesa/callback")
+CALLBACK_URL = os.getenv("MPESA_CALLBACK_URL", "https://portifolio-ebdeg3d3fug9bffh.southafricanorth-01.azurewebsites.net/mpesa/callback")
 
 
 def get_access_token() -> str:
     credentials = base64.b64encode(f"{CONSUMER_KEY}:{CONSUMER_SECRET}".encode()).decode()
     url = f"{DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials"
-
-    response = requests.get(url, headers={"Authorization": f"Basic {credentials}"}, timeout=15)
-
-    if response.status_code != 200 or not response.text.strip():
-        # Fallback to POST
-        response = requests.post(url, headers={"Authorization": f"Basic {credentials}"}, timeout=15)
+    
+    # Safaricom Production often requires POST for token generation
+    try:
+        response = requests.post(url, headers={"Authorization": f"Basic {credentials}"}, timeout=30)
+        if response.status_code != 200:
+            # Fallback to GET if POST fails
+            response = requests.get(url, headers={"Authorization": f"Basic {credentials}"}, timeout=30)
+    except Exception as e:
+        logger.error(f"Token request failed: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"M-Pesa connection error: {str(e)}")
 
     if response.status_code != 200:
+        logger.error(f"Failed to get token. Status: {response.status_code}, Response: {response.text}")
         raise HTTPException(
             status_code=502,
             detail=f"Failed to get M-Pesa access token (HTTP {response.status_code})."
-        )
-
-    body = response.text.strip()
-    if not body:
-        raise HTTPException(
-            status_code=502,
-            detail=(
-                "Daraja API returned an empty token response. "
-                "If using production mode, whitelist your server IPs on the Safaricom Daraja portal."
-            )
         )
 
     try:
@@ -75,20 +74,15 @@ def generate_password() -> tuple[str, str]:
 
 
 class STKPushRequest(BaseModel):
-    phone: str
+    phone_number: str  # Fixed to match frontend payload
     amount: int = 100
     description: str = "Buy Elijah a cup of tea"
-
-
-class QRCodeRequest(BaseModel):
-    amount: int = 100
-    reference: str = "Tea for Elijah"
 
 
 @router.post("/stk-push")
 def stk_push(payload: STKPushRequest):
     # Normalize phone number to 254XXXXXXXXX
-    phone = payload.phone.strip().replace(" ", "").replace("-", "")
+    phone = payload.phone_number.strip().replace(" ", "").replace("-", "")
     if phone.startswith("0"):
         phone = "254" + phone[1:]
     elif phone.startswith("+"):
@@ -120,16 +114,19 @@ def stk_push(payload: STKPushRequest):
         "TransactionDesc": payload.description,
     }
 
+    logger.info(f"Sending STK Push to {phone} for amount {payload.amount}")
+    
     response = requests.post(
         f"{DARAJA_BASE}/mpesa/stkpush/v1/processrequest",
         json=body,
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        timeout=20
+        timeout=30
     )
 
     try:
         data = response.json()
     except Exception:
+        logger.error(f"Invalid JSON from M-Pesa: {response.text}")
         raise HTTPException(status_code=502, detail="Invalid response from M-Pesa STK Push API")
 
     if response.status_code != 200 or data.get("ResponseCode") != "0":
@@ -139,6 +136,7 @@ def stk_push(payload: STKPushRequest):
             or data.get("errorCode")
             or "STK Push failed"
         )
+        logger.error(f"STK Push failed: {error_msg}")
         raise HTTPException(status_code=502, detail=error_msg)
 
     return {
@@ -150,45 +148,21 @@ def stk_push(payload: STKPushRequest):
     }
 
 
-@router.post("/qr-code")
-def generate_qr(payload: QRCodeRequest):
-    token = get_access_token()
-
-    body = {
-        "MerchantName": "Elijah Kimani",
-        "RefNo": payload.reference,
-        "Amount": payload.amount,
-        "TrxCode": "PB",
-        "CPI": SHORTCODE,
-        "Size": "300",
-    }
-
-    response = requests.post(
-        f"{DARAJA_BASE}/mpesa/qrcode/v1/generate",
-        json=body,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        timeout=20
-    )
-
-    try:
-        data = response.json()
-    except Exception:
-        raise HTTPException(status_code=502, detail="Invalid response from M-Pesa QR Code API")
-
-    if response.status_code != 200 or data.get("ResponseCode") != "00":
-        raise HTTPException(
-            status_code=502,
-            detail=data.get("ResponseDescription", "QR Code generation failed")
-        )
-
-    return {
-        "success": True,
-        "qr_code": data.get("QRCode"),
-        "amount": payload.amount,
-    }
-
-
 @router.post("/callback")
-async def mpesa_callback(data: dict):
-    print(f"M-Pesa Callback received: {data}")
-    return {"ResultCode": 0, "ResultDesc": "Accepted"}
+async def mpesa_callback(request: Request):
+    try:
+        data = await request.json()
+        logger.info(f"M-Pesa Callback received: {data}")
+        
+        # Extract basic info for logging
+        stk_callback = data.get("Body", {}).get("stkCallback", {})
+        result_code = stk_callback.get("ResultCode")
+        result_desc = stk_callback.get("ResultDesc")
+        checkout_id = stk_callback.get("CheckoutRequestID")
+        
+        logger.info(f"Transaction {checkout_id} result: {result_code} - {result_desc}")
+        
+        return {"ResultCode": 0, "ResultDesc": "Accepted"}
+    except Exception as e:
+        logger.error(f"Error processing callback: {str(e)}")
+        return {"ResultCode": 1, "ResultDesc": "Error processing callback"}
