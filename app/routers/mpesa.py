@@ -179,3 +179,13 @@ async def mpesa_callback(request: Request):
     except Exception as e:
         logger.error(f"Error processing callback: {str(e)}")
         return {"ResultCode": 1, "ResultDesc": "Error processing callback"}
+
+
+@router.get("/my-ip")
+async def get_server_ip():
+    """Return the server's outbound IP address (temporary debug endpoint)."""
+    try:
+        ip_resp = requests.get("https://api.ipify.org", timeout=5)
+        return {"server_outbound_ip": ip_resp.text, "note": "Add this IP to Daraja portal whitelist"}
+    except Exception as e:
+        return {"error": str(e)}
