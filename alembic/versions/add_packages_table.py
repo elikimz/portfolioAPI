@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 
 revision: str = 'add_packages'
-down_revision: Union[str, None] = 'c4a53769ce4f'
+down_revision: Union[str, None] = 'add_certificates_table'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
