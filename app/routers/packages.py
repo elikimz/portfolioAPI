@@ -10,12 +10,12 @@ from app.models import Package, User
 from app.schema import PackageCreate, PackageUpdate, PackageResponse
 from app.routers.users import get_current_user
 
-router = APIRouter(prefix="/packages", tags=["Packages"])
+router = APIRouter(tags=["Packages"])
 
 
 # ── Public: List active packages ─────────────────────────────────────────────
 
-@router.get("/", response_model=List[PackageResponse])
+@router.get("", response_model=List[PackageResponse])
 def list_packages(
     page: int = 1,
     size: int = 50,
@@ -50,7 +50,7 @@ def get_package(package_id: UUID, db: Session = Depends(get_db)):
 
 # ── Authenticated: Create package ────────────────────────────────────────────
 
-@router.post("/", response_model=PackageResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PackageResponse, status_code=status.HTTP_201_CREATED)
 def create_package(
     payload: PackageCreate,
     db: Session = Depends(get_db),
