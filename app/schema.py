@@ -197,3 +197,52 @@ class CertificateResponse(BaseModel):
 
     class Config:
         orm_mode = True
+# ── Packages ─────────────────────────────────────────────────────────────────
+
+class PackageCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    price: float = Field(0, ge=0)
+    currency: str = Field("KES", max_length=10)
+    delivery_days: int = Field(7, ge=0)
+    features: Optional[List[str]] = []
+    badge: Optional[str] = Field(None, max_length=50)
+    icon: Optional[str] = Field(None, max_length=50)
+    color: Optional[str] = Field(None, max_length=50)
+    display_order: int = Field(0, ge=0)
+    is_featured: Optional[bool] = False
+
+class PackageUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = None
+    price: Optional[float] = Field(None, ge=0)
+    currency: Optional[str] = Field(None, max_length=10)
+    delivery_days: Optional[int] = Field(None, ge=0)
+    features: Optional[List[str]] = None
+    badge: Optional[str] = Field(None, max_length=50)
+    icon: Optional[str] = Field(None, max_length=50)
+    color: Optional[str] = Field(None, max_length=50)
+    display_order: Optional[int] = Field(None, ge=0)
+    is_featured: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+class PackageResponse(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str]
+    price: float
+    currency: str
+    delivery_days: int
+    features: Optional[List[str]]
+    badge: Optional[str]
+    icon: Optional[str]
+    color: Optional[str]
+    display_order: int
+    is_featured: bool
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    user_id: UUID
+
+    class Config:
+        orm_mode = True
