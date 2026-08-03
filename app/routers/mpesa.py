@@ -118,7 +118,7 @@ def stk_push(payload: STKPushRequest):
         "BusinessShortCode": SHORTCODE,
         "Password": password,
         "Timestamp": timestamp,
-        "TransactionType": "CustomerPayBillOnline",
+        "TransactionType": "CustomerBuyGoodsOnline",
         "Amount": payload.amount,
         "PartyA": phone,
         "PartyB": SHORTCODE,
