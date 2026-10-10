@@ -10,7 +10,7 @@ from app.routers.users import get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[CertificateResponse])
+@router.get("", response_model=List[CertificateResponse])
 def get_certificates(
     db: Session = Depends(get_db),
     user_id: Optional[str] = None
@@ -31,7 +31,7 @@ def get_certificates(
     
     return query.all()
 
-@router.post("/", response_model=CertificateResponse)
+@router.post("", response_model=CertificateResponse)
 def create_certificate(
     payload: CertificateCreate,
     db: Session = Depends(get_db),

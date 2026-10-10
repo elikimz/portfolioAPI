@@ -73,7 +73,7 @@ class ProjectResponse(BaseModel):
     user_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ContactMessageCreate(BaseModel):
     name: str
@@ -103,7 +103,7 @@ class ContactMessageResponse(BaseModel):
     is_deleted: bool
    
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ProficiencyLevel(str, Enum):
     beginner = "Beginner"
@@ -135,7 +135,7 @@ class SkillResponse(BaseModel):
     user_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class BlogPostCreate(BaseModel):
     title: str
@@ -162,7 +162,7 @@ class BlogPostResponse(BaseModel):
     is_deleted: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CertificateCreate(BaseModel):
     title: str
@@ -196,7 +196,7 @@ class CertificateResponse(BaseModel):
     user_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 # ── Packages ─────────────────────────────────────────────────────────────────
 
 class PackageCreate(BaseModel):
@@ -245,4 +245,4 @@ class PackageResponse(BaseModel):
     user_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True

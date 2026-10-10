@@ -7,7 +7,8 @@ from typing import List
 from uuid import UUID
 
 from app.database import get_db
-from app.models import ContactMessage
+from app.models import ContactMessage, User
+from app.routers.users import get_current_user
 from app.schema import ContactMessageCreate, ContactMessageUpdate, ContactMessageResponse
 
 router = APIRouter()
@@ -30,7 +31,7 @@ def create_contact_message(
 
 # Get all contact messages (No authorization required)
 @router.get("", response_model=List[ContactMessageResponse])
-def get_contact_messages(db: Session = Depends(get_db)):
+def get_contact_messages(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     messages = db.query(ContactMessage).filter(ContactMessage.is_deleted == False).all()
     return messages
 
@@ -39,7 +40,8 @@ def get_contact_messages(db: Session = Depends(get_db)):
 @router.get("/{message_id}", response_model=ContactMessageResponse)
 def get_contact_message(
     message_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     message = db.query(ContactMessage).filter(
         ContactMessage.id == message_id, ContactMessage.is_deleted == False
@@ -56,7 +58,8 @@ def get_contact_message(
 def update_contact_message(
     message_id: UUID,
     message_update: ContactMessageUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     message = db.query(ContactMessage).filter(
         ContactMessage.id == message_id
@@ -77,7 +80,8 @@ def update_contact_message(
 @router.delete("/{message_id}")
 def delete_contact_message(
     message_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     message = db.query(ContactMessage).filter(
         ContactMessage.id == message_id
