@@ -1,8 +1,27 @@
 from fastapi import FastAPI
+import logging
+import os
+from alembic import command
+from alembic.config import Config
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import users, projects, contacts, skill, blogs, mpesa, certificates, packages, portfolio_content
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+def run_database_migrations():
+    """Bring a deployed database to the latest schema before serving requests."""
+    try:
+        config = Config(os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic.ini"))
+        database_url = os.getenv("DATABASE_URL")
+        if database_url:
+            config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+        command.upgrade(config, "heads")
+        logger.info("Database migrations completed")
+    except Exception:
+        logger.exception("Database migration failed during startup")
+        raise
 
 # Enable CORS
 app.add_middleware(

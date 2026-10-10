@@ -3,7 +3,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 revision = 'add_portfolio_content'
-down_revision = 'add_packages'
+down_revision = ('add_packages', 'c4a53769ce4f')
 branch_labels = None
 depends_on = None
 
