@@ -9,6 +9,7 @@ from app.routers import users, projects, contacts, skill, blogs, mpesa, certific
 
 app = FastAPI()
 logger = logging.getLogger(__name__)
+app.state.release = "mpesa-status-v1"
 
 @app.on_event("startup")
 def ensure_portfolio_schema():
