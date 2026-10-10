@@ -155,7 +155,7 @@ def stk_push(payload: STKPushRequest):
 
     return {
         "success": True,
-        "message": "STK Push sent! Check your phone for the M-Pesa prompt.",
+        "message": "M-Pesa request accepted by Daraja; waiting for transaction confirmation.",
         "checkout_request_id": data.get("CheckoutRequestID"),
         "merchant_request_id": data.get("MerchantRequestID"),
         "environment": MPESA_ENV,
