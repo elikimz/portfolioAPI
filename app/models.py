@@ -17,6 +17,9 @@ class User(Base):
     full_name = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
     profile_picture = Column(String, nullable=True)
+    cv_url = Column(String, nullable=True)
+    cv_filename = Column(String, nullable=True)
+    cv_updated_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_deleted = Column(Boolean, default=False)
@@ -138,3 +141,44 @@ class Package(Base):
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="packages")
+
+class Experience(Base):
+    __tablename__ = "experiences"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String, nullable=False)
+    organization = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    start_date = Column(DateTime, nullable=True)
+    end_date = Column(DateTime, nullable=True)
+    is_current = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted = Column(Boolean, default=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user = relationship("User")
+
+class Achievement(Base):
+    __tablename__ = "achievements"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String, nullable=False)
+    organization = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    achieved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted = Column(Boolean, default=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user = relationship("User")
+
+class EventPhoto(Base):
+    __tablename__ = "event_photos"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    image_url = Column(String, nullable=False)
+    event_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted = Column(Boolean, default=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    user = relationship("User")

@@ -19,6 +19,8 @@ class UserCreate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=3, max_length=100)
     bio: Optional[str] = Field(None, max_length=500)
     profile_picture: Optional[str] = Field(None, max_length=255)
+    cv_url: Optional[str] = Field(None, max_length=500)
+    cv_filename: Optional[str] = Field(None, max_length=255)
 
 class UserLogin(BaseModel):
     Email: str
@@ -28,6 +30,8 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=3, max_length=100)
     bio: Optional[str] = Field(None, max_length=500)
     profile_picture: Optional[str] = Field(None, max_length=255)
+    cv_url: Optional[str] = Field(None, max_length=500)
+    cv_filename: Optional[str] = Field(None, max_length=255)
 
 class ProjectCreate(BaseModel):
     title: str
@@ -246,3 +250,40 @@ class PackageResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ExperienceCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    organization: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_current: bool = False
+class ExperienceResponse(ExperienceCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    user_id: UUID
+    class Config: from_attributes = True
+class AchievementCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    organization: Optional[str] = None
+    description: Optional[str] = None
+    achieved_at: Optional[datetime] = None
+class AchievementResponse(AchievementCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    user_id: UUID
+    class Config: from_attributes = True
+class EventPhotoCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    image_url: str = Field(..., min_length=1, max_length=500)
+    event_date: Optional[datetime] = None
+class EventPhotoResponse(EventPhotoCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    user_id: UUID
+    class Config: from_attributes = True

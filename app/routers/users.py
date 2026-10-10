@@ -5,6 +5,7 @@ from app.database import get_db
 from app.models import User
 from app.schema import Token, UserCreate, UserUpdate
 from app.auth import decode_access_token, verify_password, create_access_token, hash_password
+from datetime import datetime
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
@@ -34,6 +35,8 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         full_name=user_data.full_name,
         bio=user_data.bio,
         profile_picture=user_data.profile_picture,
+        cv_url=user_data.cv_url,
+        cv_filename=user_data.cv_filename,
     )
     db.add(new_user)
     db.commit()
@@ -59,6 +62,8 @@ def get_me(current_user: User = Depends(get_current_user)):
         "full_name": current_user.full_name,
         "bio": current_user.bio,
         "profile_picture": current_user.profile_picture,
+        "cv_url": current_user.cv_url,
+        "cv_filename": current_user.cv_filename,
     }
 
 
@@ -77,6 +82,11 @@ def update_user_profile(
         user.bio = user_update.bio
     if user_update.profile_picture is not None:
         user.profile_picture = user_update.profile_picture
+    if user_update.cv_url is not None:
+        user.cv_url = user_update.cv_url
+        user.cv_updated_at = datetime.utcnow()
+    if user_update.cv_filename is not None:
+        user.cv_filename = user_update.cv_filename
     db.commit()
     db.refresh(user)
     return {
@@ -86,6 +96,8 @@ def update_user_profile(
         "full_name": user.full_name,
         "bio": user.bio,
         "profile_picture": user.profile_picture,
+        "cv_url": user.cv_url,
+        "cv_filename": user.cv_filename,
     }
 
 
@@ -93,3 +105,11 @@ def update_user_profile(
 def get_all_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     users = db.query(User).filter(User.is_deleted == False).all()
     return [{"id": str(u.id), "username": u.username, "email": u.email, "full_name": u.full_name} for u in users]
+
+
+@router.get("/profile")
+def get_public_profile(db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.is_deleted == False).order_by(User.created_at.asc()).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return {"id": str(user.id), "username": user.username, "email": user.email, "full_name": user.full_name, "bio": user.bio, "profile_picture": user.profile_picture, "cv_url": user.cv_url, "cv_filename": user.cv_filename}
