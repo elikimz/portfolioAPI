@@ -181,6 +181,40 @@ async def mpesa_callback(request: Request):
         return {"ResultCode": 1, "ResultDesc": "Error processing callback"}
 
 
+@router.get("/stk-status/{checkout_request_id}")
+def stk_status(checkout_request_id: str):
+    """Query the confirmed result of an STK request from Daraja."""
+    token = get_access_token()
+    password, timestamp = generate_password()
+    body = {
+        "BusinessShortCode": SHORTCODE,
+        "Password": password,
+        "Timestamp": timestamp,
+        "CheckoutRequestID": checkout_request_id,
+    }
+    try:
+        response = requests.post(
+            f"{DARAJA_BASE}/mpesa/stkpushquery/v1/query",
+            json=body,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            timeout=30,
+        )
+        data = response.json()
+    except Exception as exc:
+        logger.error(f"STK status query failed: {exc}")
+        raise HTTPException(status_code=502, detail="Unable to check the M-Pesa transaction status.")
+
+    result_code = data.get("ResultCode")
+    if response.status_code != 200:
+        raise HTTPException(status_code=502, detail=data.get("errorMessage") or data.get("errorCode") or "M-Pesa status query failed")
+    return {
+        "success": result_code == "0" or result_code == 0,
+        "result_code": result_code,
+        "result_description": data.get("ResultDesc") or data.get("ResponseDescription") or "M-Pesa is still processing the request.",
+        "checkout_request_id": checkout_request_id,
+    }
+
+
 @router.get("/my-ip")
 async def get_server_ip():
     """Return the server's outbound IP address (temporary debug endpoint)."""
