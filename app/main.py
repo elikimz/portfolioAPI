@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 import logging
 import os
-from alembic import command
-from alembic.config import Config
+from sqlalchemy import inspect, text
+from app.database import engine
+from app.models import Experience, Achievement, EventPhoto
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import users, projects, contacts, skill, blogs, mpesa, certificates, packages, portfolio_content
 
@@ -10,18 +11,16 @@ app = FastAPI()
 logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
-def run_database_migrations():
-    """Bring a deployed database to the latest schema before serving requests."""
-    try:
-        config = Config(os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic.ini"))
-        database_url = os.getenv("DATABASE_URL")
-        if database_url:
-            config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
-        command.upgrade(config, "heads")
-        logger.info("Database migrations completed")
-    except Exception:
-        logger.exception("Database migration failed during startup")
-        raise
+def ensure_portfolio_schema():
+    """Create only the additive portfolio fields/tables needed by this release."""
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS cv_url VARCHAR"))
+        connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS cv_filename VARCHAR"))
+        connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS cv_updated_at TIMESTAMP"))
+        Experience.__table__.create(connection, checkfirst=True)
+        Achievement.__table__.create(connection, checkfirst=True)
+        EventPhoto.__table__.create(connection, checkfirst=True)
+        logger.info("Portfolio schema is ready")
 
 # Enable CORS
 app.add_middleware(
